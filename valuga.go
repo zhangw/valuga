@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -66,7 +68,7 @@ func serveHTTP(w http.ResponseWriter, req *http.Request) {
 	d := &net.Dialer{
 		Timeout: 10 * time.Second,
 	}
-	dialer, _ := proxy.SOCKS5("tcp", "127.0.0.1:1080", nil, d)
+	dialer, _ := proxy.SOCKS5("tcp", socksAddr, nil, d)
 
 	if req.Method == "CONNECT" {
 		handleTunnel(w, req, dialer)
@@ -75,6 +77,17 @@ func serveHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+var socksAddr string
+var httpAddr string
+
+func Init() {
+	flag.StringVar(&socksAddr, "socksAddr", "127.0.0.1:10910", "the socks5 addr")
+	flag.StringVar(&httpAddr, "httpAddr", "0.0.0.0:10110", "the http proxy addr")
+	flag.Parse()
+}
+
 func main() {
-	http.ListenAndServe("127.0.0.1:8124", http.HandlerFunc(serveHTTP))
+	Init()
+	fmt.Printf("http proxy %s --> socks %s", httpAddr, socksAddr)
+	http.ListenAndServe(httpAddr, http.HandlerFunc(serveHTTP))
 }
